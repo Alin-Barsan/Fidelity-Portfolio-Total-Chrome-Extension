@@ -2,7 +2,7 @@
 A simple Chrome extension that subtracts any stock plan account balances from your portfolio total.
 
 ## Purpose
-When you have an unvested stock grant, the money is not really yours because you won't receive it for years.
+When you have an unvested stock grant, the money is not really yours (yet) because it will take years before you receive the full sum.
 
 It's annoying to see this reflected in your current portfolio total value, and apparently there's no way to configure this or hide this, like you can with any other account of yours using the 'Customize' button in the top left of the view on the Fidelity page.  
 
