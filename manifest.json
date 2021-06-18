@@ -1,0 +1,15 @@
+{
+  "manifest_version": 2,
+ 
+  "name": "Fidelity Portfolio Value Filter",
+  "version": "0.0.1",
+  "description": "Recalculates 'All Accounts' portfolio value by removing the value of any Stock Plan accounts.",
+ 
+  "content_scripts": [{
+    "css": ["styles.css"],
+    "js": ["content.js"],
+	"_comment": "The line below is where you specify the website where this extension activates.  Needs updating as things change.",
+    "matches": ["https://oltx.fidelity.com/*"]
+  }]
+ 
+}
