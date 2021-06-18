@@ -8,7 +8,7 @@
   "content_scripts": [{
     "css": ["styles.css"],
     "js": ["content.js"],
-	"_comment": "The line below is where you specify the website where this extension activates.  Needs updating as things change.",
+    "_comment": "The line below is where you specify the website where this extension activates.  Needs updating as things change.",
     "matches": ["https://oltx.fidelity.com/*"]
   }]
  
