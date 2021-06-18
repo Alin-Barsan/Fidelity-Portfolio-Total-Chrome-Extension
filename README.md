@@ -27,3 +27,6 @@ You can also open the console (inspect anywhere on the page, and then go to the 
 
 ### This Extension Doesn't Work On Other Fidelity Pages (Like NetBenefits)
 The manifest is configured only to work on that one base URL.  You could update it to match and thus activate for other base URLs, but the javascript logic that looks for specific elements will most likely fail on other pages as they'll have different class names and attributes.  Sorry!
+
+### The Extension Is Mis-Calculating My Total (Or Making It Negative)
+This can be caused by the observer triggering too aggressively / often and pulling you negative, or by the pattern matching for the stock plan accounts accidentally triggering on non-intended accounts.  I would begin investing either of those.  If your page is freezing or hanging, you may have found yourself in an infinite observer loop where your changes to the portfolio total are somehow triggering the observer.  This should have been accounted for, but if it's happening, just disable your extension and then debug accordingly.
