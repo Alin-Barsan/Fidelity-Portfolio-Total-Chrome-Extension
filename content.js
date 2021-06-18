@@ -17,8 +17,8 @@ function convert(num) {
 // Define a formatter that lets us convert our new calculated portfolio value back to a human-friendly format.
 // Taken from: https://stackoverflow.com/questions/149055/how-to-format-numbers-as-currency-strings
 var formatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
+    style: 'currency',
+    currency: 'USD',
 });
 
 
