@@ -1,3 +1,4 @@
+
 /*
     This file contains a script that tries to:
     - Identify the section containing the total portfolio value
@@ -21,66 +22,48 @@ var formatter = new Intl.NumberFormat('en-US', {
     currency: 'USD',
 });
 
-
-// Define the pointer to the element that contains the portfolio total outside the function so we can access this elsewhere
-var portfolioTotalElement;
-
-// Save the process of updating the portfolio total so we can have the extension repeat this logic as needed
-function updatePortfolioTotal() {
-
-    // This first section has a few lazy assumptions that may need updating if Fidelity updates their site:
-    // 1. The class name of the element containing the value is hardcoded here.
-    // 2. This assumes there's only one element matching this hardcoded class.  It selects and uses the first match.
-    // 3. This assumes the value is contained directly in this element (not in some sub-section within it).
-    // All of these assumptions held true in Fidelity's web page structure at the time when I made this.  Things may change.
-
-    // Identify the section containing the total portfolio value
-    portfolioTotalElement = document.getElementsByClassName("acct-selector__all-accounts-balance")[0];
-
-    // Extract the value from that section and save it
-    var modifiedNumericTotal = convert(portfolioTotalElement.textContent);
-
-    // Note: similar assumptions as described earlier are made for the Stock Plan accounts.
-    // Thus, this logic may also need updates over time if fidelity changes things.
-
-    // We want to identify all sections containing the values of stock plan accounts, but they don't have obvious JS classes...
-    // First, gets all account name elements with "Stock" somewhere in their text.
-	var stockPlanNameElements = Array.from(document.getElementsByClassName("acct-selector__acct-num")).filter(el => el.textContent.includes("Stock"))
-	stockPlanNameElements.forEach(element => {	
-		// Second, work our way "up" the tree to find all account wrappers containing these elements
-		var stockPlanWrapper = element.closest(".acct-selector__acct-wrapper")
-		// Third, work our way back "down" from the wrapper to find the actual account balances within the wrapper
-		var stockPlanBalanceElements = stockPlanWrapper.getElementsByClassName("acct-selector__acct-balance");
-        Array.from(stockPlanBalanceElements).forEach(balanceElement => {
-            // Lastly, for each stock plan balance element:
-            // Extract the value, convert it to numeric, and subtract it from the running portfolio total.
-            modifiedNumericTotal = modifiedNumericTotal - convert(balanceElement.innerText);
-        });
+function getPortfolioTotal() {
+	var accountBalances = Array.from(document.getElementsByClassName("acct-selector__acct-balance"))
+	var totalAccountBalance = 0;
+	accountBalances.forEach(element => {
+		totalAccountBalance = totalAccountBalance + convert(element.innerText);
 	});
-
-    // Write the resulting value (original total - stock plan accounts) back to the section containing the portfolio value
-    portfolioTotalElement.innerHTML = formatter.format(modifiedNumericTotal);
+	return totalAccountBalance;
 }
 
-window.addEventListener('load', function () {
-	// Update the portfolio total once on page load
-	updatePortfolioTotal()
-
-	// Configure an observer to listen to changes to the portfolio total - this indicates that Fidelity has refreshed / recalculated the total,
-	// so we should too.  Note that we can also trigger this... so we updated the portfolio already above this definition.
-	// This implementation is from: https://stackoverflow.com/questions/29405279/detect-div-change-in-javascript
-	var config = { attributes: true, childList: true, characterData: true }
-	var observer = new MutationObserver(function(mutations) {
-		mutations.forEach(function(mutation) {
-			// At this point we have detected that the portfolio total has changed.  But we don't want to end up in an infinite loop,
-			// so we disconnect the observer, THEN write our updated portfolio total, then re-register the observer on the element.
-			observer.disconnect();
-			updatePortfolioTotal();
-			observer.observe(portfolioTotalElement, config);
+function getFilteredAccountTotal(selector) {
+		// We want to identify all sections containing the selector-matched accounts, but they don't have obvious JS classes...
+		// First, gets all account name (or number) elements with the selector somewhere in their text.
+		var namedElements = Array.from(document.querySelectorAll(".acct-selector__acct-num,.acct-selector__acct-name")).filter(el => el.textContent.includes(selector))
+		var accountTotals = 0
+		namedElements.forEach(element => {	
+			// Second, work our way "up" the tree to find all account wrappers containing these elements
+			var accountWrapper = element.closest(".acct-selector__acct-wrapper")
+			// Third, work our way back "down" from the wrapper to find the actual account balances within the wrapper
+			var balanceElements = accountWrapper.getElementsByClassName("acct-selector__acct-balance");
+			Array.from(balanceElements).forEach(balanceElement => {
+				// Lastly, for each stock plan balance element:
+				// Extract the value, convert it to numeric, and subtract it from the running portfolio total.
+				accountTotals = accountTotals + convert(balanceElement.innerText);
+			});
 		});
-	});
+		
+		return accountTotals
+}
 
-	// Register the observer on the portfolio total element - this is the first time it's registered, as the above is just the configuration
-	// on how it behaves when the mutation of the watched element is observed.
-	observer.observe(portfolioTotalElement, config);
-})
+function updatePortfolioTotal() {
+	
+	// Because we're repeating this frequently and may have errors if the DOM isn't fully loaded, we try/catch and swallow exceptions here
+	try {
+
+		// Identify the section containing the total portfolio value
+		var portfolioTotalElement = document.getElementsByClassName("acct-selector__all-accounts-balance")[0];
+
+		// Write the resulting value (original total - stock plan accounts) back to the section containing the portfolio value
+		portfolioTotalElement.innerHTML = formatter.format(getPortfolioTotal() - getFilteredAccountTotal("Stock") - getFilteredAccountTotal("Visa"));
+
+	} catch (e) {}
+ 
+}
+
+setInterval(updatePortfolioTotal, 250);
