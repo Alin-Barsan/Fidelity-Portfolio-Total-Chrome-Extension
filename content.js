@@ -35,7 +35,7 @@ function updatePortfolioTotal() {
     // All of these assumptions held true in Fidelity's web page structure at the time when I made this.  Things may change.
 
     // Identify the section containing the total portfolio value
-    portfolioTotalElement = document.getElementsByClassName('account-selector--tab-row account-selector--all-accounts-balance js-portfolio-balance')[0];
+    portfolioTotalElement = document.getElementsByClassName("acct-selector__all-accounts-balance")[0];
 
     // Extract the value from that section and save it
     var modifiedNumericTotal = convert(portfolioTotalElement.textContent);
@@ -43,40 +43,44 @@ function updatePortfolioTotal() {
     // Note: similar assumptions as described earlier are made for the Stock Plan accounts.
     // Thus, this logic may also need updates over time if fidelity changes things.
 
-    // Identify all sections containing the values of stock plan accounts
-    // First, gets all containers marked as belonging to a stock plan
-    var stockPlanContainerElements = document.querySelectorAll("[data-acct-type='Stock Plans']");
-    stockPlanContainerElements.forEach(element => {
-        // Second, for each stock plan section, find all stock plan account balances
-        var stockPlanBalanceElements = element.getElementsByClassName("account-selector--tab-row account-selector--account-balance  js-acct-balance");
+    // We want to identify all sections containing the values of stock plan accounts, but they don't have obvious JS classes...
+    // First, gets all account name elements with "Stock" somewhere in their text.
+	var stockPlanNameElements = Array.from(document.getElementsByClassName("acct-selector__acct-num")).filter(el => el.textContent.includes("Stock"))
+	stockPlanNameElements.forEach(element => {	
+		// Second, work our way "up" the tree to find all account wrappers containing these elements
+		var stockPlanWrapper = element.closest(".acct-selector__acct-wrapper")
+		// Third, work our way back "down" from the wrapper to find the actual account balances within the wrapper
+		var stockPlanBalanceElements = stockPlanWrapper.getElementsByClassName("acct-selector__acct-balance");
         Array.from(stockPlanBalanceElements).forEach(balanceElement => {
-            // Third, for each stock plan balance element:
+            // Lastly, for each stock plan balance element:
             // Extract the value, convert it to numeric, and subtract it from the running portfolio total.
             modifiedNumericTotal = modifiedNumericTotal - convert(balanceElement.innerText);
         });
-    });
+	});
 
     // Write the resulting value (original total - stock plan accounts) back to the section containing the portfolio value
     portfolioTotalElement.innerHTML = formatter.format(modifiedNumericTotal);
 }
 
-// Update the portfolio total once on page load
-updatePortfolioTotal()
+window.addEventListener('load', function () {
+	// Update the portfolio total once on page load
+	updatePortfolioTotal()
 
-// Configure an observer to listen to changes to the portfolio total - this indicates that Fidelity has refreshed / recalculated the total,
-// so we should too.  Note that we can also trigger this... so we updated the portfolio already above this definition.
-// This implementation is from: https://stackoverflow.com/questions/29405279/detect-div-change-in-javascript
-var config = { attributes: true, childList: true, characterData: true }
-var observer = new MutationObserver(function(mutations) {
-    mutations.forEach(function(mutation) {
-        // At this point we have detected that the portfolio total has changed.  But we don't want to end up in an infinite loop,
-        // so we disconnect the observer, THEN write our updated portfolio total, then re-register the observer on the element.
-        observer.disconnect();
-        updatePortfolioTotal();
-        observer.observe(portfolioTotalElement, config);
-    });
-});
+	// Configure an observer to listen to changes to the portfolio total - this indicates that Fidelity has refreshed / recalculated the total,
+	// so we should too.  Note that we can also trigger this... so we updated the portfolio already above this definition.
+	// This implementation is from: https://stackoverflow.com/questions/29405279/detect-div-change-in-javascript
+	var config = { attributes: true, childList: true, characterData: true }
+	var observer = new MutationObserver(function(mutations) {
+		mutations.forEach(function(mutation) {
+			// At this point we have detected that the portfolio total has changed.  But we don't want to end up in an infinite loop,
+			// so we disconnect the observer, THEN write our updated portfolio total, then re-register the observer on the element.
+			observer.disconnect();
+			updatePortfolioTotal();
+			observer.observe(portfolioTotalElement, config);
+		});
+	});
 
-// Register the observer on the portfolio total element - this is the first time it's registered, as the above is just the configuration
-// on how it behaves when the mutation of the watched element is observed.
-observer.observe(portfolioTotalElement, config);
+	// Register the observer on the portfolio total element - this is the first time it's registered, as the above is just the configuration
+	// on how it behaves when the mutation of the watched element is observed.
+	observer.observe(portfolioTotalElement, config);
+})
